@@ -1,0 +1,418 @@
+# Evaluation and Signal Assessment Framework
+# Last Updated: 2025-01-30
+
+# ============================================================
+# MULTI-AGENT EVALUATION SYSTEM
+# ============================================================
+
+evaluation_stages:
+  # Stage 1: Individual Agent Analysis
+  individual_analysis:
+    timeout_seconds: 30
+    required_outputs:
+      - direction: bullish|bearish|neutral
+      - confidence: 0.0-1.0
+      - rationale: string
+      - evidence: [metrics]
+
+  # Stage 2: Signal Aggregation
+  signal_aggregation:
+    method: weighted_consensus
+    minimum_sources: 2
+    conflict_resolution: strongest_wins
+
+  # Stage 3: Risk Evaluation
+  risk_evaluation:
+    mandatory: true
+    veto_power: true
+    timeout_seconds: 10
+
+  # Stage 4: Final Decision
+  final_decision:
+    requires: risk_approval
+    output_format: trade_signal|no_trade
+
+# ============================================================
+# SIGNAL QUALITY TIERS
+# ============================================================
+
+signal_quality_tiers:
+  tier_A:
+    description: "Highest conviction - all signals aligned"
+    requirements:
+      - consensus_strength: ">= 0.85"
+      - sources_aligned: 3
+      - risk_reward: ">= 2.0"
+      - htf_bias_aligned: true
+      - confidence_threshold: 0.80
+    max_position_multiplier: 1.0
+
+  tier_B:
+    description: "High conviction - strong majority"
+    requirements:
+      - consensus_strength: ">= 0.70"
+      - sources_aligned: ">= 2"
+      - risk_reward: ">= 1.5"
+      - confidence_threshold: 0.65
+    max_position_multiplier: 0.75
+
+  tier_C:
+    description: "Moderate conviction - majority"
+    requirements:
+      - consensus_strength: ">= 0.55"
+      - sources_aligned: ">= 2"
+      - risk_reward: ">= 1.5"
+      - confidence_threshold: 0.55
+    max_position_multiplier: 0.50
+
+  tier_D:
+    description: "Low conviction - weak consensus"
+    requirements:
+      - consensus_strength: ">= 0.40"
+      - sources_aligned: ">= 1"
+      - risk_reward: ">= 1.5"
+    max_position_multiplier: 0.0  # No trade
+
+  no_signal:
+    description: "Insufficient consensus for action"
+    requirements:
+      - consensus_strength: "< 0.40"
+    action: do_not_trade
+
+# ============================================================
+# SOURCE WEIGHTING CONFIGURATION
+# ============================================================
+
+source_weights:
+  # Signal source weights for consensus calculation
+  smc_analysis:
+    weight: 0.35
+    components:
+      - htf_bias: 0.30
+      - poi_quality: 0.25
+      - market_structure: 0.25
+      - liquidity_context: 0.20
+
+  ml_prediction:
+    weight: 0.40
+    components:
+      - model_probability: 0.50
+      - feature_confidence: 0.25
+      - model_recent_accuracy: 0.25
+
+  microstructure:
+    weight: 0.25
+    components:
+      - order_flow: 0.40
+      - vpin_signal: 0.30
+      - volume_analysis: 0.30
+
+# Dynamic weight adjustment based on regime
+regime_adjustments:
+  trending:
+    smc_analysis: +0.05
+    ml_prediction: 0.00
+    microstructure: -0.05
+
+  ranging:
+    smc_analysis: +0.05
+    ml_prediction: -0.05
+    microstructure: +0.00
+
+  high_volatility:
+    smc_analysis: -0.05
+    ml_prediction: -0.05
+    microstructure: +0.10
+
+# ============================================================
+# CONFLUENCE SCORING
+# ============================================================
+
+confluence_factors:
+  # Each factor adds to confluence score
+  htf_bias_aligned:
+    points: 1.0
+    description: "Higher timeframe supports direction"
+
+  poi_unmitigated:
+    points: 0.8
+    description: "Point of Interest is fresh"
+
+  fvg_present:
+    points: 0.5
+    description: "Fair Value Gap at entry zone"
+
+  liquidity_swept:
+    points: 0.7
+    description: "Recent liquidity grab before entry"
+
+  killzone_active:
+    points: 0.4
+    description: "Within active trading session"
+
+  ml_probability_high:
+    points: 1.0
+    threshold: 0.70
+    description: "ML model confidence > 70%"
+
+  microstructure_supportive:
+    points: 0.6
+    description: "Order flow aligns with direction"
+
+  volume_confirmation:
+    points: 0.3
+    description: "Volume supports the move"
+
+# Confluence thresholds
+confluence_thresholds:
+  high: ">= 3.5"     # High conviction setup
+  moderate: ">= 2.5"  # Tradeable setup
+  low: ">= 1.5"       # Marginal setup
+  insufficient: "< 1.5"  # Do not trade
+
+# ============================================================
+# PROCESS EVALUATION METRICS
+# ============================================================
+
+process_metrics:
+  # Evaluate the trading process, not just outcomes
+  signal_generation:
+    - latency_ms: target < 5000
+    - completion_rate: target > 0.99
+    - error_rate: target < 0.01
+
+  model_performance:
+    # Track over rolling windows
+    windows: [1d, 7d, 30d]
+    metrics:
+      - accuracy
+      - precision
+      - recall
+      - f1_score
+      - brier_score
+
+  signal_quality_distribution:
+    # Track quality tier distribution
+    target_distribution:
+      tier_A: ">= 0.10"  # At least 10% A-tier
+      tier_B: ">= 0.20"
+      tier_C: ">= 0.30"
+      tier_D: "<= 0.40"
+
+  agent_agreement:
+    # Track how often agents agree
+    metrics:
+      - full_agreement_rate
+      - majority_agreement_rate
+      - conflict_rate
+    thresholds:
+      healthy_conflict_rate: [0.15, 0.35]  # Some disagreement is healthy
+
+# ============================================================
+# MODEL EVALUATION CRITERIA
+# ============================================================
+
+model_evaluation:
+  # Minimum requirements for model deployment
+  minimum_requirements:
+    oos_sharpe: ">= 1.0"
+    oos_win_rate: ">= 0.45"
+    profit_factor: ">= 1.3"
+    max_drawdown: "<= 0.20"
+    min_trades: ">= 100"
+    pbo: "<= 0.5"
+
+  # Warning thresholds (not blocking but concerning)
+  warning_thresholds:
+    is_oos_ratio: "> 1.3"  # In-sample much better than OOS
+    parameter_sensitivity: "> 0.3"  # High sensitivity to params
+    win_rate_volatility: "> 0.15"  # Inconsistent win rate
+
+  # Exceptional performance (increases confidence)
+  exceptional_thresholds:
+    oos_sharpe: ">= 2.0"
+    profit_factor: ">= 2.0"
+    max_drawdown: "<= 0.10"
+    pbo: "<= 0.25"
+
+  # Regime-specific evaluation
+  regime_performance:
+    required_regimes:
+      - bull_market
+      - bear_market
+      - sideways
+      - high_volatility
+    minimum_performance_per_regime:
+      sharpe: ">= 0.5"
+      win_rate: ">= 0.40"
+
+# ============================================================
+# STRATEGY EVALUATION RUBRIC
+# ============================================================
+
+strategy_evaluation_rubric:
+  categories:
+    performance:
+      weight: 0.35
+      criteria:
+        - oos_sharpe
+        - profit_factor
+        - cagr
+        - sortino_ratio
+
+    risk:
+      weight: 0.25
+      criteria:
+        - max_drawdown
+        - var_95
+        - recovery_time
+        - tail_ratio
+
+    robustness:
+      weight: 0.25
+      criteria:
+        - pbo_score
+        - parameter_stability
+        - regime_consistency
+        - monte_carlo_95_percentile
+
+    execution:
+      weight: 0.15
+      criteria:
+        - trade_frequency
+        - avg_trade_duration
+        - slippage_sensitivity
+        - capacity
+
+  scoring:
+    excellent: ">= 0.85"
+    good: ">= 0.70"
+    acceptable: ">= 0.55"
+    poor: "< 0.55"
+
+# ============================================================
+# CONTINUOUS MONITORING
+# ============================================================
+
+monitoring:
+  # Real-time monitoring thresholds
+  real_time_alerts:
+    drawdown_warning: 0.05  # 5% drawdown
+    drawdown_critical: 0.10  # 10% drawdown
+    consecutive_losses: 5
+    daily_loss: 0.03  # 3% daily loss
+
+  # Model drift detection
+  drift_detection:
+    check_frequency: daily
+    metrics:
+      - prediction_calibration
+      - feature_distribution_shift
+      - performance_degradation
+    thresholds:
+      calibration_error: 0.10
+      ks_statistic: 0.15  # Kolmogorov-Smirnov for drift
+      sharpe_decline: 0.50  # 50% decline triggers alert
+
+  # Agent health monitoring
+  agent_health:
+    check_frequency: every_minute
+    thresholds:
+      response_timeout: 30  # seconds
+      error_rate: 0.05  # 5% errors
+      disagreement_spike: 0.60  # Sudden high disagreement
+
+# ============================================================
+# DISCUSSION TRIGGERS
+# ============================================================
+
+discussion_triggers:
+  # Automatic discussion initiation triggers
+  mandatory_discussions:
+    - trigger: "new_model_candidate"
+      participants: [ml-model-engineer, backtester, risk-manager]
+      topic: model_approval
+
+    - trigger: "parameter_change_request"
+      participants: [ml-model-engineer, backtester, feature-engineer]
+      topic: parameter_optimization
+
+    - trigger: "strategy_deployment"
+      participants: all
+      topic: strategy_approval
+
+    - trigger: "circuit_breaker_triggered"
+      participants: [risk-manager, trading-coordinator]
+      topic: risk_assessment
+
+  optional_discussions:
+    - trigger: "high_signal_conflict"
+      condition: "agent_disagreement > 0.50"
+      participants: [conflicting_agents, discussion-facilitator]
+      topic: signal_resolution
+
+    - trigger: "performance_degradation"
+      condition: "rolling_sharpe < 0.5"
+      participants: [ml-model-engineer, backtester, risk-manager]
+      topic: model_review
+
+# ============================================================
+# OUTPUT SPECIFICATIONS
+# ============================================================
+
+output_formats:
+  signal_evaluation_output:
+    schema:
+      signal_id: string
+      timestamp: datetime
+      direction: bullish|bearish|neutral
+      confidence: float  # 0.0-1.0
+      quality_tier: A|B|C|D
+      consensus_breakdown:
+        smc: {direction, confidence, rationale}
+        ml: {direction, confidence, probability}
+        microstructure: {direction, confidence, metrics}
+      confluence_score: float
+      risk_assessment:
+        approved: boolean
+        position_size: float
+        risk_reward: float
+        concerns: [string]
+      final_decision: trade|no_trade
+      metadata:
+        processing_time_ms: int
+        agents_participated: [string]
+
+  model_evaluation_output:
+    schema:
+      model_id: string
+      evaluation_date: datetime
+      metrics:
+        oos_sharpe: float
+        oos_return: float
+        max_drawdown: float
+        profit_factor: float
+        win_rate: float
+        pbo: float
+      validation:
+        walk_forward_results: [{window, is_sharpe, oos_sharpe}]
+        monte_carlo_results: {mean, std, p5, p95}
+        regime_results: {regime: metrics}
+      approval:
+        status: approved|rejected|conditional
+        conditions: [string]
+        reviewer_notes: string
+
+  discussion_output:
+    schema:
+      discussion_id: string
+      topic: string
+      participants: [string]
+      duration_minutes: int
+      positions: [{agent, position, confidence, evidence}]
+      consensus:
+        achieved: boolean
+        strength: float
+        decision: string
+      action_items: [{agent, action, deadline}]
+      follow_up: {review_date, success_metrics}

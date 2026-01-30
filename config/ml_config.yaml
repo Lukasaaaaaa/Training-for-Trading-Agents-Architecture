@@ -1,0 +1,112 @@
+# Machine Learning Configuration
+# Last Updated: 2025-01-30
+
+model:
+  type: lightgbm
+  task: binary_classification
+  target: triple_barrier_label
+
+lightgbm_params:
+  # Core parameters
+  objective: binary
+  metric:
+    - auc
+    - binary_logloss
+  boosting_type: gbdt
+
+  # Tree parameters
+  num_leaves: 31
+  max_depth: -1
+  min_child_samples: 20
+  min_child_weight: 0.001
+
+  # Regularization
+  lambda_l1: 0.1
+  lambda_l2: 0.1
+  min_gain_to_split: 0.01
+  feature_fraction: 0.8
+  bagging_fraction: 0.8
+  bagging_freq: 5
+
+  # Learning parameters
+  learning_rate: 0.05
+  num_iterations: 1000
+  early_stopping_rounds: 50
+
+  # Imbalance handling
+  is_unbalance: true
+
+  # Performance
+  num_threads: -1
+  seed: 42
+  verbose: -1
+
+hyperparameter_search:
+  method: optuna
+  n_trials: 100
+  optimization_metric: sharpe_ratio
+  search_space:
+    num_leaves:
+      type: categorical
+      values: [15, 31, 63, 127]
+    max_depth:
+      type: categorical
+      values: [3, 5, 7, -1]
+    min_child_samples:
+      type: categorical
+      values: [10, 20, 50, 100]
+    learning_rate:
+      type: categorical
+      values: [0.01, 0.03, 0.05, 0.1]
+    feature_fraction:
+      type: uniform
+      low: 0.6
+      high: 0.9
+    bagging_fraction:
+      type: uniform
+      low: 0.6
+      high: 0.9
+    lambda_l1:
+      type: loguniform
+      low: 0.001
+      high: 1.0
+    lambda_l2:
+      type: loguniform
+      low: 0.001
+      high: 1.0
+
+target_definition:
+  type: triple_barrier
+  params:
+    profit_taking_atr: 2.0
+    stop_loss_atr: 1.0
+    max_holding_period_hours: 24
+    min_return_threshold: 0.001
+
+cross_validation:
+  method: purged_walk_forward
+  params:
+    n_splits: 5
+    train_period_days: 252
+    test_period_days: 63
+    embargo_days: 5
+    expanding_window: false
+
+sample_weights:
+  method: return_attribution
+  decay_factor: 0.95
+
+acceptance_criteria:
+  min_oos_sharpe: 1.0
+  max_cv_std_ratio: 0.20
+  min_auc_roc: 0.55
+  max_feature_concentration: 0.30
+  min_cv_folds_profitable: 4
+
+anti_overfitting:
+  max_tree_depth: 7
+  min_samples_leaf: 20
+  early_stopping: true
+  regularization: true
+  feature_selection: true
+  max_features: 100

@@ -1,0 +1,139 @@
+# Signal Evaluation Configuration
+# Last Updated: 2025-01-30
+
+signal_sources:
+  microstructure:
+    path: /state/signals/microstructure_signals.json
+    base_weight: 0.25
+    decay_minutes: 15
+    reliability_score: 0.72
+    required: false
+
+  smc:
+    path: /state/signals/smc_signals.json
+    base_weight: 0.35
+    decay_minutes: 60
+    reliability_score: 0.78
+    required: true
+
+  ml_model:
+    path: /state/signals/ml_signals.json
+    base_weight: 0.40
+    decay_minutes: 30
+    reliability_score: 0.68
+    required: true
+
+validation:
+  freshness:
+    max_age_minutes: 60
+    apply_decay: true
+    decay_function: exponential  # or 'linear'
+
+  completeness:
+    required_fields:
+      - direction
+      - confidence
+      - stop_loss
+    optional_fields:
+      - entry_zone
+      - targets
+
+  consistency:
+    confidence_range: [0.0, 1.0]
+    stop_valid: true
+    rr_minimum: 1.0
+
+  source_health:
+    check_source_status: true
+    min_reliability: 0.5
+
+aggregation:
+  method: weighted_average  # or 'bayesian', 'voting'
+  min_sources_required: 2
+  handle_conflicts: weighted_resolution
+
+conflict_resolution:
+  strategy: weighted_vote
+  threshold_ratio: 1.5  # Winner must exceed loser by this ratio
+  fallback: no_trade
+  escalate_if_close: true
+  close_threshold: 0.15
+
+quality_scoring:
+  base_from: confidence
+  adjustments:
+    agreement_bonus:
+      max_bonus: 0.10
+      full_agreement_required: true
+
+    n_sources_bonus:
+      per_source: 0.05
+      max_bonus: 0.15
+
+    regime_adjustment:
+      trending: 0.05
+      ranging: -0.05
+      volatile: -0.10
+
+    session_adjustment:
+      killzone: 0.05
+      off_hours: -0.05
+
+    volatility_adjustment:
+      low: 0.00
+      normal: 0.00
+      high: -0.05
+
+quality_tiers:
+  A:
+    range: [0.80, 1.00]
+    action: high_conviction_trade
+    size_multiplier: 1.0
+
+  B:
+    range: [0.65, 0.80]
+    action: normal_trade
+    size_multiplier: 1.0
+
+  C:
+    range: [0.50, 0.65]
+    action: reduced_size_trade
+    size_multiplier: 0.5
+
+  D:
+    range: [0.35, 0.50]
+    action: monitor_only
+    size_multiplier: 0.0
+
+  F:
+    range: [0.00, 0.35]
+    action: no_trade
+    size_multiplier: 0.0
+
+consensus:
+  voting_method: weighted
+  required_participants:
+    - smc
+    - ml_model
+  optional_participants:
+    - microstructure
+  approval_threshold: 0.6
+  veto_agents:
+    - risk-manager
+  timeout_seconds: 30
+
+source_reliability_tracking:
+  enabled: true
+  window_days: 30
+  metrics:
+    - signal_count
+    - profitable_count
+    - win_rate
+    - avg_rr_achieved
+  update_weights: true
+  weight_update_frequency: weekly
+
+output:
+  validity_period_minutes: 15
+  require_risk_approval: true
+  notification_threshold: B  # Notify on tier B or better

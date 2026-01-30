@@ -1,0 +1,70 @@
+# Risk Management Configuration
+# Last Updated: 2025-01-30
+
+account_limits:
+  max_total_risk_pct: 2.0          # Maximum total risk per day
+  max_single_trade_risk_pct: 0.5   # Maximum risk per individual trade
+  max_open_positions: 5            # Maximum concurrent positions
+  max_correlated_positions: 3      # Max positions with correlation > 0.7
+  max_gross_exposure_pct: 100      # Maximum gross exposure as % of account
+  max_net_exposure_pct: 50         # Maximum net exposure as % of account
+
+drawdown_limits:
+  max_daily_drawdown_pct: 3.0
+  max_weekly_drawdown_pct: 5.0
+  max_monthly_drawdown_pct: 10.0
+  max_total_drawdown_pct: 20.0
+
+drawdown_scaling:
+  # Scale position size based on drawdown level
+  thresholds:
+    - drawdown_pct: 5
+      scale_factor: 0.75
+    - drawdown_pct: 10
+      scale_factor: 0.50
+    - drawdown_pct: 15
+      scale_factor: 0.25
+    - drawdown_pct: 20
+      scale_factor: 0.0  # Stop trading
+
+position_rules:
+  min_risk_reward: 1.5             # Minimum R:R ratio
+  max_position_size_pct: 20.0      # Max single position as % of account
+  max_leverage: 3.0                # Maximum leverage
+  min_stop_distance_atr: 0.5       # Minimum stop distance in ATR
+  max_stop_distance_atr: 3.0       # Maximum stop distance in ATR
+
+sizing_method:
+  primary: fixed_fractional
+  params:
+    risk_per_trade_pct: 0.5
+
+circuit_breakers:
+  level_1:
+    trigger: daily_loss_pct >= 5
+    actions:
+      - halt_new_trades
+      - alert_user
+    duration: 1_hour
+
+  level_2:
+    trigger: daily_loss_pct >= 10
+    actions:
+      - close_losing_positions
+      - halt_all_trades
+      - alert_user
+    duration: end_of_day
+
+  level_3:
+    trigger: total_drawdown_pct >= 20
+    actions:
+      - close_all_positions
+      - halt_system
+      - require_manual_restart
+    duration: indefinite
+
+monitoring:
+  position_pnl_interval: realtime
+  drawdown_check_interval: 1_minute
+  exposure_check: before_each_trade
+  risk_metrics_interval: 5_minutes

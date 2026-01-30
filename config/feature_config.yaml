@@ -1,0 +1,155 @@
+# Feature Engineering Configuration
+# Last Updated: 2025-01-30
+
+feature_sources:
+  microstructure:
+    path: /state/features/microstructure_features.json
+    prefix: ms_
+    refresh_interval: 1m
+    priority: high
+
+  smc:
+    path: /state/features/smc_features.json
+    prefix: smc_
+    refresh_interval: 5m
+    priority: high
+
+  technical:
+    compute_from: ohlcv
+    prefix: ta_
+    refresh_interval: 1m
+    priority: medium
+
+  price:
+    compute_from: ohlcv
+    prefix: price_
+    refresh_interval: 1m
+    priority: high
+
+price_features:
+  returns:
+    windows: [1, 5, 10, 20, 60, 120, 240]
+    types:
+      - simple
+      - log
+
+  momentum:
+    windows: [5, 10, 20, 50]
+    normalize: true
+
+  volatility:
+    windows: [10, 20, 50]
+    methods:
+      - std
+      - parkinson
+      - garman_klass
+      - yang_zhang
+
+  price_position:
+    windows: [20, 50, 100]
+    metrics:
+      - percentile
+      - zscore
+      - minmax
+
+fractional_differentiation:
+  enabled: true
+  d_values: [0.3, 0.4, 0.5]
+  threshold: 1e-5
+  apply_to:
+    - close
+    - volume
+
+technical_indicators:
+  trend:
+    sma: [10, 20, 50, 200]
+    ema: [10, 20, 50]
+    macd:
+      fast: 12
+      slow: 26
+      signal: 9
+    adx: [14]
+    supertrend:
+      period: 10
+      multiplier: 3
+
+  momentum:
+    rsi: [7, 14, 21]
+    stochastic:
+      k: 14
+      d: 3
+    cci: [14, 20]
+    williams_r: [14]
+    roc: [10, 20]
+
+  volatility:
+    bollinger_bands:
+      period: 20
+      std: 2
+    keltner:
+      period: 20
+      atr_mult: 1.5
+    atr: [14, 20]
+    natr: [14]
+
+  volume:
+    obv: true
+    vwap: true
+    mfi: [14]
+    accumulation_distribution: true
+    chaikin_money_flow: [20]
+
+derived_features:
+  sma_crossovers:
+    - fast: 10
+      slow: 20
+    - fast: 20
+      slow: 50
+    - fast: 50
+      slow: 200
+
+  price_to_sma: [10, 20, 50, 200]
+
+  rsi_divergence:
+    lookback: 20
+    threshold: 0.7
+
+  bb_position: true
+  macd_histogram_slope: true
+
+transformations:
+  scaling:
+    method: robust  # or 'standard', 'minmax'
+    clip_outliers: 3.0  # standard deviations
+
+  missing_values:
+    method: ffill_then_zero
+    max_consecutive_missing: 5
+
+  stationarity:
+    adf_threshold: 0.05
+    apply_frac_diff: true
+    default_d: 0.4
+
+  encoding:
+    categorical: one_hot
+    cyclical: sin_cos  # for time features
+
+feature_selection:
+  importance_method: mda  # Mean Decrease Accuracy
+  cv_method: purged_kfold
+  min_importance: 0.01
+  max_correlation: 0.85
+  cluster_features: true
+  max_features: 100
+
+quality_checks:
+  missing_rate_max: 0.01
+  stationarity_check: true
+  correlation_threshold: 0.85
+  variance_threshold: 0.01
+
+versioning:
+  enabled: true
+  archive_previous: true
+  changelog_required: true

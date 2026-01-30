@@ -1,0 +1,145 @@
+# Smart Money Concepts Configuration
+# Last Updated: 2025-01-30
+
+timeframe_hierarchy:
+  htf:  # Higher timeframe - trend direction
+    - 1D
+    - 4H
+  mtf:  # Medium timeframe - structure
+    - 1H
+    - 15m
+  ltf:  # Lower timeframe - entries
+    - 5m
+    - 1m
+
+market_structure:
+  swing_detection:
+    min_swing_size_atr: 1.0
+    lookback_candles: 20
+    confirmation_candles: 3
+
+  break_of_structure:
+    body_break_required: true
+    close_break_required: false
+    min_break_size_pct: 0.001
+
+  change_of_character:
+    require_sweep_first: true
+    confirm_with_ltf: true
+
+order_blocks:
+  detection:
+    lookback_candles: 20
+    min_impulse_size_atr: 2.0
+    max_ob_candles: 3
+
+  refinement:
+    method: wick_to_body  # or 'full_candle', 'body_only'
+    entry_zone: [0.5, 0.79]  # OTE zone within OB
+
+  validity:
+    max_age_candles: 100
+    invalidation: below_low  # for bullish OB
+    mitigation_threshold: 0.5  # % of OB mitigated
+
+fair_value_gaps:
+  detection:
+    min_gap_size_atr: 0.5
+    include_wicks: false
+
+  tracking:
+    max_age_candles: 50
+    track_fills: true
+    consequent_encroachment: 0.5
+
+  validity:
+    full_fill_invalidates: true
+
+liquidity:
+  equal_level_tolerance_pct: 0.001
+  min_touches: 2
+  sweep_confirmation_candles: 3
+  types:
+    - equal_highs
+    - equal_lows
+    - swing_high
+    - swing_low
+    - range_high
+    - range_low
+
+premium_discount:
+  calculation_method: swing_range  # or 'session_range', 'daily_range'
+  zones:
+    premium: [0.5, 1.0]
+    equilibrium: [0.5, 0.5]
+    discount: [0.0, 0.5]
+  ote_zone: [0.62, 0.79]  # Optimal Trade Entry
+
+killzones:
+  timezone: UTC
+  sessions:
+    asian:
+      start: "00:00"
+      end: "08:00"
+      bias_weight: 0.8
+    london:
+      start: "08:00"
+      end: "12:00"
+      bias_weight: 1.2
+    london_close:
+      start: "14:00"
+      end: "16:00"
+      bias_weight: 0.9
+    new_york_am:
+      start: "13:00"
+      end: "16:00"
+      bias_weight: 1.2
+    new_york_pm:
+      start: "16:00"
+      end: "20:00"
+      bias_weight: 1.0
+
+  killzone_boost:
+    london_open: 0.05
+    ny_open: 0.05
+    overlap: 0.10
+    asian_range: -0.05
+
+entry_models:
+  ob_fvg_entry:
+    conditions:
+      - htf_bias_aligned
+      - mtf_structure_confirmed
+      - poi_unmitigated
+      - in_discount_or_premium
+    trigger: ltf_choch
+    confluence_minimum: 3
+
+  liquidity_sweep_entry:
+    conditions:
+      - liquidity_swept
+      - poi_nearby
+      - htf_bias_aligned
+    trigger: market_structure_shift
+    confluence_minimum: 2
+
+confidence_calibration:
+  high:
+    range: [0.85, 1.0]
+    requirements:
+      - htf_mtf_aligned
+      - confluence_count_gte: 3
+      - poi_fresh
+      - liquidity_swept
+  moderate:
+    range: [0.65, 0.85]
+    requirements:
+      - htf_supportive
+      - confluence_count_gte: 2
+  low:
+    range: [0.40, 0.65]
+    requirements:
+      - some_confluence
+  insufficient:
+    range: [0.0, 0.40]
+    action: do_not_signal

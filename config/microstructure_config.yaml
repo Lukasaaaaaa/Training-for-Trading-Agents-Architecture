@@ -1,0 +1,144 @@
+# Market Microstructure Analysis Configuration
+# Last Updated: 2025-01-30
+
+data_requirements:
+  tick_data:
+    required: true
+    min_resolution_ms: 100
+    fields:
+      - timestamp
+      - price
+      - quantity
+      - side
+  orderbook:
+    required: false
+    depth_levels: 10
+    snapshot_interval_ms: 1000
+  ohlcv:
+    required: true
+    min_timeframe: 1m
+
+spread_analysis:
+  calculation:
+    method: time_weighted  # or 'trade_weighted', 'simple'
+    window_minutes: 5
+  features:
+    - bid_ask_spread
+    - spread_volatility
+    - spread_mean_reversion
+    - relative_spread  # spread / mid_price
+  thresholds:
+    normal_spread_percentile: 80
+    wide_spread_multiplier: 2.0
+
+depth_analysis:
+  levels_to_analyze: [1, 3, 5, 10]
+  features:
+    - depth_imbalance_l1
+    - depth_imbalance_l5
+    - cumulative_depth_ratio
+    - depth_slope
+  imbalance_calculation:
+    method: log_ratio  # or 'simple_ratio', 'normalized'
+    smoothing_window: 10
+
+order_flow:
+  trade_classification:
+    method: tick_rule  # or 'lee_ready', 'bulk_volume'
+    threshold: 0.0
+
+  features:
+    - trade_imbalance
+    - volume_imbalance
+    - aggressive_ratio
+    - order_flow_toxicity
+
+  vpin:
+    bucket_size: 50  # trades per bucket
+    n_buckets: 50
+    update_frequency: 10  # trades
+
+volume_profile:
+  calculation:
+    bar_size_pct: 0.1  # % of price range
+    lookback_periods: [20, 50, 100]
+
+  features:
+    - point_of_control
+    - value_area_high
+    - value_area_low
+    - volume_profile_skew
+    - relative_volume
+
+  value_area_pct: 70  # % of volume for VA
+
+institutional_detection:
+  large_trade_threshold:
+    method: percentile
+    value: 95
+
+  patterns:
+    - volume_clustering
+    - twap_detection
+    - vwap_execution
+    - iceberg_orders
+
+  accumulation_distribution:
+    min_cluster_size: 10
+    time_window_minutes: 60
+
+liquidity_assessment:
+  metrics:
+    - market_depth_score
+    - resilience_score
+    - slippage_estimate
+    - execution_cost_model
+
+  regime_classification:
+    thresholds:
+      normal:
+        spread_percentile_max: 70
+        depth_percentile_min: 30
+      stressed:
+        spread_percentile_max: 90
+        depth_percentile_min: 10
+      crisis:
+        spread_percentile_min: 90
+        depth_percentile_max: 10
+
+signal_generation:
+  types:
+    - liquidity_regime
+    - flow_imbalance
+    - institutional_activity
+    - absorption_pattern
+
+  confidence_levels:
+    high:
+      range: [0.8, 1.0]
+      description: "Strong institutional footprint, multiple confirmations"
+    moderate:
+      range: [0.6, 0.8]
+      description: "Clear pattern with supporting evidence"
+    low:
+      range: [0.4, 0.6]
+      description: "Tentative, recommend additional confirmation"
+    insufficient:
+      range: [0.0, 0.4]
+      description: "Do not generate signal"
+
+  validity_period_minutes: 15
+
+feature_output:
+  features_for_ml:
+    - vpin
+    - spread_pct
+    - depth_imbalance_l1
+    - depth_imbalance_l5
+    - volume_imbalance
+    - aggressive_ratio
+    - relative_volume
+    - liquidity_score
+    - institutional_activity_score
+
+  update_frequency: 1m
